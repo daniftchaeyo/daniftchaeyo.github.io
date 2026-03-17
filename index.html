@@ -1,106 +1,190 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>PingWave Chat</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App de Mensajería MQTT</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            color: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-<style>
-body{
-font-family: Arial;
-max-width:600px;
-margin:auto;
-}
+        .contenedor {
+            width: 100%;
+            max-width: 700px;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 18px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
 
-#chat{
-border:1px solid #ccc;
-height:350px;
-overflow-y:auto;
-padding:10px;
-background:#f5f5f5;
-}
+        .header {
+            background: #ffffff;
+            padding: 20px;
+            border-bottom: 1px solid #ededed;
+        }
 
-.mensaje{
-margin:5px 0;
-}
+        .header h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #111;
+        }
 
-.usuario{
-font-weight:bold;
-color:#2b7cff;
-}
+        .header p {
+            margin: 6px 0 0;
+            color: #777;
+            font-size: 14px;
+        }
 
-input{
-padding:6px;
-margin-top:5px;
-}
-</style>
+        #mensajes {
+            height: 380px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
 
+        .mensaje {
+            background: #ffffff;
+            border: 1px solid #e8e8e8;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .mensaje b {
+            color: #111;
+        }
+
+        .sistema {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 14px;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            padding: 16px;
+            border-top: 1px solid #ededed;
+            background: #ffffff;
+        }
+
+        #mensajeInput {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid #dcdcdc;
+            border-radius: 12px;
+            outline: none;
+            font-size: 15px;
+            background: #fff;
+        }
+
+        #mensajeInput:focus {
+            border-color: #bdbdbd;
+        }
+
+        button {
+            padding: 14px 22px;
+            border: none;
+            border-radius: 12px;
+            background: #111111;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        button:hover {
+            background: #333333;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            .contenedor {
+                border-radius: 14px;
+            }
+
+            #mensajes {
+                height: 320px;
+            }
+
+            .input-area {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<h2>PingWave Chat</h2>
+    <div class="contenedor">
+        <div class="header">
+            <h2>Chat Redes - Equipo</h2>
+            <p>Mensajería en tiempo real con MQTT</p>
+        </div>
 
-<input id="usuario" placeholder="Tu nombre">
+        <div id="mensajes"></div>
 
-<div id="chat"></div>
-
-<input id="mensaje" placeholder="Escribe un mensaje..." style="width:80%">
-<button onclick="enviar()">Enviar</button>
-
-<script>
-
-const broker = 'wss://broker.hivemq.com:8884/mqtt'
-const topic = 'pingwave/chat/global'
-
-const client = mqtt.connect(broker)
-
-const chat = document.getElementById("chat")
-
-client.on('connect', ()=>{
-    agregarSistema("Conectado al servidor")
-    client.subscribe(topic)
-})
-
-client.on('message',(topic,message)=>{
-
-    const data = JSON.parse(message.toString())
-
-    chat.innerHTML += `
-    <div class="mensaje">
-        <span class="usuario">${data.usuario}:</span>
-        ${data.texto}
+        <div class="input-area">
+            <input type="text" id="mensajeInput" placeholder="Escribe un mensaje...">
+            <button onclick="enviarMensaje()">Enviar</button>
+        </div>
     </div>
-    `
 
-    chat.scrollTop = chat.scrollHeight
-})
+    <script>
+        const brokerUrl = 'wss://broker.hivemq.com:8884/mqtt';
+        const topic = 'Dani&Jovani';
 
-function enviar(){
+        const client = mqtt.connect(brokerUrl);
 
-    const usuario = document.getElementById("usuario").value
-    const texto = document.getElementById("mensaje").value
+        client.on('connect', () => {
+            console.log('¡Conectado al broker!');
+            client.subscribe(topic);
+            document.getElementById('mensajes').innerHTML += `<div class="sistema">Conectado al servidor...</div>`;
+        });
 
-    if(usuario=="" || texto=="") return
+        client.on('message', (topic, message) => {
+            const chat = document.getElementById('mensajes');
+            chat.innerHTML += `<div class="mensaje"><b>Mensaje:</b> ${message.toString()}</div>`;
+            chat.scrollTop = chat.scrollHeight;
+        });
 
-    const mensaje = {
-        usuario: usuario,
-        texto: texto
-    }
+        function enviarMensaje() {
+            const input = document.getElementById('mensajeInput');
+            const texto = input.value;
+            if (texto.trim() !== "") {
+                client.publish(topic, texto);
+                input.value = '';
+            }
+        }
 
-    client.publish(topic,JSON.stringify(mensaje))
-
-    document.getElementById("mensaje").value=""
-}
-
-function agregarSistema(texto){
-chat.innerHTML += `<p><i>${texto}</i></p>`
-}
-
-</script>
-
-</body>
-</html>
+        document.getElementById('mensajeInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                enviarMensaje();
+            }
+        });
     </script>
+
 </body>
 </html>
